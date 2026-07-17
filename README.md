@@ -33,6 +33,8 @@ npm run dev
 
 ### Исходный код и GitHub Pages
 
-Исходный код публикуется в [nurgisa-labs/go-9x9](https://github.com/nurgisa-labs/go-9x9). Workflow GitHub Actions собирает `dist/` и развёртывает GitHub Pages; ссылку на работающую страницу следует подтверждать только после завершения workflow.
+Исходный код опубликован в [nurgisa-labs/go-9x9](https://github.com/nurgisa-labs/go-9x9). Workflow GitHub Actions собирает `dist/` и развёртывает GitHub Pages.
+
+Игра доступна по адресу: **https://nurgisa-labs.github.io/go-9x9/**
 
 Оставшаяся ручная приёмка описана в [docs/manual-checklist.md](docs/manual-checklist.md).
