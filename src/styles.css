@@ -1,0 +1,291 @@
+/*
+ * Спокойная, практичная доска го: нейтральная страница, тёплая
+ * поверхность доски, никакой анимации. Состояния различимы не только
+ * цветом: текстовые подписи, пунктирная рамка и крест на мёртвых камнях.
+ */
+
+:root {
+  --page-bg: #edeae2;
+  --ink: #26221b;
+  --muted-ink: #5b5546;
+  --board-wood: #d9b26a;
+  --board-line: #6b5122;
+  --panel-bg: #f8f6f0;
+  --panel-border: #c8c0ae;
+  --focus: #1f4e8c;
+  --error-ink: #7f2a1e;
+  --error-bg: #f5e3de;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--ink);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.45;
+}
+
+.app {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+}
+
+h1 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--panel-border);
+}
+
+/*
+ * В DOM статус идёт раньше доски (81 кнопка), чтобы клавиатура и
+ * скринридеры сначала попадали на состояние партии; grid-области
+ * восстанавливают привычный визуальный порядок: доска слева/сверху.
+ */
+.layout {
+  display: grid;
+  grid-template-areas:
+    'board'
+    'status';
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 46rem) {
+  .layout {
+    grid-template-columns: minmax(0, 32rem) minmax(17rem, 1fr);
+    grid-template-areas: 'board status';
+  }
+}
+
+/* ---------- Доска ---------- */
+
+.board {
+  grid-area: board;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  width: min(100%, 32rem);
+  aspect-ratio: 1;
+  background: var(--board-wood);
+  border: 2px solid var(--board-line);
+  padding: clamp(0.4rem, 2.2vw, 0.9rem);
+}
+
+.intersection {
+  /* Каждая кнопка — пересечение; линии сетки рисуются фоном. */
+  --h-size: 100% 2px;
+  --h-pos: center;
+  --v-size: 2px 100%;
+  --v-pos: center;
+
+  position: relative;
+  border: 0;
+  padding: 0;
+  background-color: transparent;
+  background-image:
+    linear-gradient(var(--board-line), var(--board-line)),
+    linear-gradient(var(--board-line), var(--board-line));
+  background-size: var(--h-size), var(--v-size);
+  background-position: var(--h-pos), var(--v-pos);
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.intersection:disabled {
+  cursor: default;
+}
+
+.intersection:not(:disabled):hover {
+  background-color: rgb(0 0 0 / 8%);
+}
+
+/* Линии у краёв доски обрываются на крайней линии, как на настоящем гобане. */
+.intersection.edge-top {
+  --v-size: 2px 50%;
+  --v-pos: center bottom;
+}
+
+.intersection.edge-bottom {
+  --v-size: 2px 50%;
+  --v-pos: center top;
+}
+
+.intersection.edge-left {
+  --h-size: 50% 2px;
+  --h-pos: right center;
+}
+
+.intersection.edge-right {
+  --h-size: 50% 2px;
+  --h-pos: left center;
+}
+
+.intersection.hoshi {
+  background-image:
+    radial-gradient(circle, var(--board-line) 0 3px, transparent 3px),
+    linear-gradient(var(--board-line), var(--board-line)),
+    linear-gradient(var(--board-line), var(--board-line));
+  background-size: 100% 100%, var(--h-size), var(--v-size);
+  background-position: center, var(--h-pos), var(--v-pos);
+}
+
+/* Камни */
+.intersection::before {
+  content: '';
+  position: absolute;
+  inset: 11%;
+  border-radius: 50%;
+  display: none;
+}
+
+.intersection.has-black::before {
+  display: block;
+  background: #211e19;
+  border: 1px solid #000;
+}
+
+.intersection.has-white::before {
+  display: block;
+  background: #f6f3ec;
+  border: 1px solid #56513f;
+}
+
+/* Мёртвая группа: не только цвет — пунктирная рамка и крест. */
+.intersection.is-dead {
+  outline: 2px dashed var(--error-ink);
+  outline-offset: -3px;
+}
+
+.intersection.is-dead::before {
+  opacity: 0.62;
+}
+
+.intersection.is-dead::after {
+  content: '✕';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(0.85rem, 3vw, 1.3rem);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.intersection.is-dead.has-black::after {
+  color: #f6f3ec;
+}
+
+.intersection.is-dead.has-white::after {
+  color: #211e19;
+}
+
+.intersection:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+/* ---------- Статус партии ---------- */
+
+.status {
+  grid-area: status;
+  display: grid;
+  gap: 0.75rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  padding: 1rem;
+}
+
+.status__turn {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.status__hint {
+  margin: 0;
+  color: var(--muted-ink);
+}
+
+.status__error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--error-bg);
+  color: var(--error-ink);
+  border-left: 4px solid var(--error-ink);
+  font-weight: 600;
+}
+
+/*
+ * Пустые live-регионы прячем только визуально (паттерн visually-hidden):
+ * display: none или visibility: hidden убрали бы их из дерева доступности,
+ * и скринридеры могли бы пропустить первое объявление. position: absolute
+ * дополнительно выводит элемент из сетки .status, так что пустой регион
+ * не создаёт видимой строки и зазора; как только появляется сообщение или
+ * итог партии, :empty перестаёт совпадать и действуют обычные стили.
+ */
+.status__hint:empty,
+.status__error:empty,
+.status__result:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.action {
+  justify-self: start;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.55rem 1.15rem;
+  background: var(--ink);
+  color: var(--panel-bg);
+  border: 1px solid var(--ink);
+  cursor: pointer;
+}
+
+.action:hover {
+  background: #3c372c;
+}
+
+.action:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---------- Итоговый счёт ---------- */
+
+.score {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.3rem 1rem;
+  justify-content: start;
+}
+
+.score dt {
+  color: var(--muted-ink);
+}
+
+.score dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.score__winner {
+  margin: 0.65rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
